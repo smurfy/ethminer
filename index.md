@@ -1,10 +1,3 @@
-# ethminer
-
-[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
-[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)][Gitter]
-[![Releases](https://img.shields.io/github/downloads/atom/atom/total.svg)][Releases]
-
-> Ethereum miner with OpenCL, CUDA and stratum support
 
 The ethminer is an Ethereum GPU mining worker. This is the actively maintained version of ethminer. It originates from [cpp-ethereum] project (where GPU mining has been discontinued) and builds on the improvements made in [Genoil's fork]. See [FAQ](#faq) for more details.
 

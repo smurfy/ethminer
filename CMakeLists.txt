@@ -77,6 +77,8 @@ function(configureProject)
 	endif()
 endfunction()
 
+add_definitions(-D_ALLOW_MSC_VER_MISMATCH)
+
 function(createBuildInfo)
 	# Set build platform; to be written to BuildInfo.h
 	set(ETH_BUILD_PLATFORM "${CMAKE_SYSTEM_NAME}")

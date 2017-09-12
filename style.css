@@ -71,39 +71,52 @@ table tr:nth-child(2n) {
 }
 
 .header {
-    background: #ffffff;
-    padding: 10px;
-    border-bottom: 1px #222222 solid;
+    background-color: #159957;
+    background-image: linear-gradient(120deg, #155799, #159957);
+    padding: 14px;
+    border-bottom: 1px #159957 solid;
     text-align: center;
 
     display: block;
-    color: #222222;
+    color: #eeeeee;
     font-size: 22px;
     font-weight: bold;
     text-decoration: none;
-    height: 110px;
 }
-
 
 .header h1 {
     border: 0;
+    font-size: 40px;
+    text-shadow: #333333 1px 1px;
 }
 .header h1 small {
     display: block;
-    color: #3c3c3c;
+    color: #eeeeee;
+    font-size: 14px;
 }
 
 .header a {
     display: inline-block;
-    padding: 5px;
-    border: 1px solid #333333;
+    padding: 8px;
+    border: 1px solid #eeeeee;
+    color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
     border-radius: 5px;
+    text-decoration: none;
+}
+
+.header a:hover {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .content {
     padding: 5px 15px;
     background: #ffffff;
-    border-top: 3px solid #888;
+    border-top: 3px solid #1fc8db;
     margin-bottom: 10px;
     margin-top: 10px;
     box-shadow: 5px 5px 5px #DDDDDD;

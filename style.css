@@ -95,7 +95,12 @@ table tr:nth-child(2n) {
     font-size: 14px;
 }
 
-.header a {
+.header h1 a {
+    color: #eeeeee;
+    text-decoration: none;
+}
+
+.header a.btn {
     display: inline-block;
     padding: 8px;
     border: 1px solid #eeeeee;
@@ -106,7 +111,7 @@ table tr:nth-child(2n) {
     text-decoration: none;
 }
 
-.header a:hover {
+.header a.btn:hover {
     color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
     background-color: rgba(255, 255, 255, 0.2);

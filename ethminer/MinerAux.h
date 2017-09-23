@@ -474,6 +474,20 @@ public:
 		return true;
 	}
 
+	void shutdown()
+	{
+		cnote << "Exiting miner...";
+		if (p_farm) 
+		{
+			if (p_farm->isMining())
+			{
+				cnote << "Stopping mining...";
+				p_farm->stop();
+			}
+		}
+		m_running = false;
+	}
+
 	void execute()
 	{
 		if (m_shouldListDevices)
@@ -924,15 +938,15 @@ private:
 		if (!m_farmRecheckSet)
 			m_farmRecheckPeriod = m_defaultStratumFarmRecheckPeriod;
 
-		Farm f;
+		p_farm = new Farm();
 		
 #if API_CORE
-		Api api(this->m_api_port, f);
+		Api api(this->m_api_port, *p_farm);
 #endif
 	
 		// this is very ugly, but if Stratum Client V2 tunrs out to be a success, V1 will be completely removed anyway
 		if (m_stratumClientVersion == 1) {
-			EthStratumClient client(&f, m_minerType, m_farmURL, m_port, m_user, m_pass, m_maxFarmRetries, m_worktimeout, m_stratumProtocol, m_email);
+			EthStratumClient client(p_farm, m_minerType, m_farmURL, m_port, m_user, m_pass, m_maxFarmRetries, m_worktimeout, m_stratumProtocol, m_email);
 			if (m_farmFailOverURL != "")
 			{
 				if (m_fuser != "")
@@ -944,9 +958,9 @@ private:
 					client.setFailover(m_farmFailOverURL, m_fport);
 				}
 			}
-			f.setSealers(sealers);
+			p_farm->setSealers(sealers);
 
-			f.onSolutionFound([&](Solution sol)
+			p_farm->onSolutionFound([&](Solution sol)
 			{
 				if (client.isConnected()) {
 					client.submit(sol);
@@ -956,18 +970,21 @@ private:
 				}
 				return false;
 			});
-			f.onMinerRestart([&](){ 
+			p_farm->onMinerRestart([&]() {
 				client.reconnect();
 			});
 
 			while (client.isRunning())
 			{
-				auto mp = f.miningProgress();
+				if (!m_running)
+					break;
+
+				auto mp = p_farm->miningProgress();
 				if (client.isConnected())
 				{
 					if (client.current())
 					{
-						minelog << mp << f.getSolutionStats() << f.farmLaunchedFormatted();
+						minelog << mp << p_farm->getSolutionStats() << p_farm->farmLaunchedFormatted();
 #if ETH_DBUS
 						dbusint.send(toString(mp).data());
 #endif
@@ -986,7 +1003,7 @@ private:
 			}
 		}
 		else if (m_stratumClientVersion == 2) {
-			EthStratumClientV2 client(&f, m_minerType, m_farmURL, m_port, m_user, m_pass, m_maxFarmRetries, m_worktimeout, m_stratumProtocol, m_email);
+			EthStratumClientV2 client(p_farm, m_minerType, m_farmURL, m_port, m_user, m_pass, m_maxFarmRetries, m_worktimeout, m_stratumProtocol, m_email);
 			if (m_farmFailOverURL != "")
 			{
 				if (m_fuser != "")
@@ -998,25 +1015,28 @@ private:
 					client.setFailover(m_farmFailOverURL, m_fport);
 				}
 			}
-			f.setSealers(sealers);
+			p_farm->setSealers(sealers);
 
-			f.onSolutionFound([&](Solution sol)
+			p_farm->onSolutionFound([&](Solution sol)
 			{
 				client.submit(sol);
 				return false;
 			});
-			f.onMinerRestart([&](){ 
+			p_farm->onMinerRestart([&]() {
 				client.reconnect();
 			});
 
 			while (client.isRunning())
 			{
-				auto mp = f.miningProgress();
+				if (!m_running)
+					break;
+
+				auto mp = p_farm->miningProgress();
 				if (client.isConnected())
 				{
 					if (client.current())
 					{
-						minelog << mp << f.getSolutionStats();
+						minelog << mp << p_farm->getSolutionStats();
 #if ETH_DBUS
 						dbusint.send(toString(mp).data());
 #endif
@@ -1034,7 +1054,7 @@ private:
 				this_thread::sleep_for(chrono::milliseconds(m_farmRecheckPeriod));
 			}
 		}
-
+		exit(0);
 	}
 #endif
 
@@ -1076,6 +1096,7 @@ private:
 	string m_farmURL = "http://127.0.0.1:8545";
 	string m_farmFailOverURL = "";
 
+	Farm *p_farm = nullptr;
 
 	string m_activeFarmURL = m_farmURL;
 	unsigned m_farmRetries = 0;

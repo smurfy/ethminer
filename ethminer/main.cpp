@@ -25,12 +25,16 @@
 #include <iostream>
 #include "MinerAux.h"
 #include "BuildInfo.h"
+#if defined(_WIN32) || defined(_MSC_VER)
+#include <Windows.h>
+#endif
 
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
 using namespace boost::algorithm;
 
+MinerCLI *mCli = nullptr;
 
 void help()
 {
@@ -54,6 +58,15 @@ void version()
 	exit(0);
 }
 
+#if defined(_WIN32) || defined(_MSC_VER)
+bool ctrlHandler(DWORD fdwCtrlType)
+{
+	if (mCli)
+		mCli->shutdown();
+	return TRUE;
+}
+#endif
+
 int main(int argc, char** argv)
 {
 	// Set env vars controlling GPU driver behavior.
@@ -61,12 +74,15 @@ int main(int argc, char** argv)
 	setenv("GPU_MAX_ALLOC_PERCENT", "100");
 	setenv("GPU_SINGLE_ALLOC_PERCENT", "100");
 
-	MinerCLI m(MinerCLI::OperationMode::Farm);
+#if defined(_WIN32) || defined(_MSC_VER)
+	SetConsoleCtrlHandler((PHANDLER_ROUTINE)ctrlHandler, TRUE);
+#endif
+	mCli = new MinerCLI(MinerCLI::OperationMode::Farm);
 
 	for (int i = 1; i < argc; ++i)
 	{
 		// Mining options:
-		if (m.interpretOption(i, argc, argv))
+		if (mCli->interpretOption(i, argc, argv))
 			continue;
 
 		// Standard options:
@@ -84,7 +100,8 @@ int main(int argc, char** argv)
 		}
 	}
 
-	m.execute();
+	mCli->execute();
 
 	return 0;
 }
+

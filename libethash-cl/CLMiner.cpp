@@ -554,7 +554,7 @@ bool CLMiner::init(const h256& seed)
 		// use selected device
 		unsigned deviceId = s_devices[index] > -1 ? s_devices[index] : index;
 		m_hwmoninfo.deviceIndex = deviceId;
-		cl::Device& device = devices[min<unsigned>(deviceId, devices.size() - 1)];
+		cl::Device& device = devices[deviceId % devices.size()];
 		string device_version = device.getInfo<CL_DEVICE_VERSION>();
 		ETHCL_LOG("Device:   " << device.getInfo<CL_DEVICE_NAME>() << " / " << device_version);
 

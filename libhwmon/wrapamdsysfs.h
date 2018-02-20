@@ -17,6 +17,8 @@ int wrap_amdsysfs_destroy(wrap_amdsysfs_handle *sysfsh);
 
 int wrap_amdsysfs_get_gpucount(wrap_amdsysfs_handle *sysfsh, int *gpucount);
 
+int wrap_amdsysfs_get_gpu_pci_id(wrap_amdsysfs_handle *sysfsh, int index, char *idbuf, int bufsize);
+
 int wrap_amdsysfs_get_tempC(wrap_amdsysfs_handle *sysfsh, int index, unsigned int *tempC);
 
 int wrap_amdsysfs_get_fanpcnt(wrap_amdsysfs_handle *sysfsh, int index, unsigned int *fanpcnt);

@@ -144,6 +144,8 @@ int wrap_adl_get_gpucount(wrap_adl_handle *adlh, int *gpucount);
 
 int wrap_adl_get_gpu_name(wrap_adl_handle *adlh, int gpuindex, char *namebuf, int bufsize);
 
+int wrap_adl_get_gpu_pci_id(wrap_adl_handle *adlh, int gpuindex, char *idbuf, int bufsize);
+
 int wrap_adl_get_tempC(wrap_adl_handle *adlh, int gpuindex, unsigned int *tempC);
 
 int wrap_adl_get_fanpcnt(wrap_adl_handle *adlh, int gpuindex, unsigned int *fanpcnt);

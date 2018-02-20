@@ -158,6 +158,30 @@ int wrap_amdsysfs_get_gpucount(wrap_amdsysfs_handle *sysfsh, int *gpucount)
 	return 0;
 }
 
+int wrap_amdsysfs_get_gpu_pci_id(wrap_amdsysfs_handle *sysfsh, int index, char *idbuf, int bufsize)
+{
+	int gpuindex = sysfsh->card_sysfs_device_id[index];
+	if (gpuindex < 0 || index >= sysfsh->sysfs_gpucount)
+		return -1;
+
+	char dbuf[120];
+	snprintf(dbuf, 120, "/sys/class/drm/card%u/device/uevent", gpuindex);
+
+	std::ifstream ifs(dbuf, std::ios::binary);
+	std::string line;
+
+	while (std::getline(ifs, line))
+	{
+		if (line.length() > 24 && line.substr(0, 13) == "PCI_SLOT_NAME") {
+			memcpy(idbuf, line.substr(14, 10).c_str(), bufsize);
+			return 0;
+		}
+	}
+
+	memcpy(idbuf, "0000:00:00", bufsize);
+	return -1;
+}
+
 int wrap_amdsysfs_get_tempC(wrap_amdsysfs_handle *sysfsh, int index, unsigned int *tempC)
 {
 	int gpuindex = sysfsh->card_sysfs_device_id[index];

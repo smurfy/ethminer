@@ -172,6 +172,25 @@ int wrap_adl_get_gpu_name(wrap_adl_handle *adlh, int gpuindex, char *namebuf, in
 	return 0;
 }
 
+int wrap_adl_get_gpu_pci_id(wrap_adl_handle *adlh, int gpuindex, char *idbuf, int bufsize)
+{
+	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
+		return -1;
+
+	char buf[256];
+
+	sprintf(
+		buf,
+		"%04x:%02x:%02x",
+		0, // Is probably 0
+		adlh->devs[adlh->phys_logi_device_id[gpuindex]].iBusNumber,
+		adlh->devs[adlh->phys_logi_device_id[gpuindex]].iDeviceNumber
+	);
+
+	memcpy(idbuf, buf, bufsize);
+
+	return 0;
+}
 
 int wrap_adl_get_tempC(wrap_adl_handle *adlh, int gpuindex, unsigned int *tempC)
 {

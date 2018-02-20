@@ -189,6 +189,8 @@ public:
 			p_hashrateTimer->cancel();
 			p_hashrateTimer = nullptr;
 		}
+		m_cuda_count = 0;
+		m_opencl_count = 0;
 	}
 
     void collectHashRate()

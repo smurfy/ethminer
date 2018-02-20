@@ -132,6 +132,7 @@ public:
 		}
 		else
 		{
+
 			start = m_miners.size();
 			ins += start;
 			m_miners.reserve(ins);
@@ -144,6 +145,13 @@ public:
 			// Start miners' threads. They should pause waiting for new work
 			// package.
 			m_miners.back()->startWorking();
+			// Count devices type
+			if(_sealer == "cuda"){
+				m_cuda_count++;
+			}
+			else if(_sealer == "opencl"){
+				m_opencl_count++;
+			}
 		}
 		m_isMining = true;
 		m_lastSealer = _sealer;
@@ -263,26 +271,29 @@ public:
 				unsigned int tempC = 0, fanpcnt = 0, powerW = 0;
 				if (hwInfo.deviceIndex >= 0) {
 					if (hwInfo.deviceType == HwMonitorInfoType::NVIDIA && nvmlh) {
-						wrap_nvml_get_tempC(nvmlh, hwInfo.deviceIndex, &tempC);
-						wrap_nvml_get_fanpcnt(nvmlh, hwInfo.deviceIndex, &fanpcnt);
+						int typeidx = hwInfo.deviceIndex % m_cuda_count;
+						wrap_nvml_get_tempC(nvmlh, typeidx, &tempC);
+						wrap_nvml_get_fanpcnt(nvmlh, typeidx, &fanpcnt);
 						if(power) {
-							wrap_nvml_get_power_usage(nvmlh, hwInfo.deviceIndex, &powerW);
+							wrap_nvml_get_power_usage(nvmlh, typeidx, &powerW);
 						}
 					}
 					else if (hwInfo.deviceType == HwMonitorInfoType::AMD && adlh) {
-						wrap_adl_get_tempC(adlh, hwInfo.deviceIndex, &tempC);
-						wrap_adl_get_fanpcnt(adlh, hwInfo.deviceIndex, &fanpcnt);
+						int typeidx = hwInfo.deviceIndex % m_opencl_count;
+						wrap_adl_get_tempC(adlh, typeidx, &tempC);
+						wrap_adl_get_fanpcnt(adlh, typeidx, &fanpcnt);
 						if(power) {
-							wrap_adl_get_power_usage(adlh, hwInfo.deviceIndex, &powerW);
+							wrap_adl_get_power_usage(adlh, typeidx, &powerW);
 						}
 					}
 #if defined(__linux)
 					// Overwrite with sysfs data if present
 					if (hwInfo.deviceType == HwMonitorInfoType::AMD && sysfsh) {
-						wrap_amdsysfs_get_tempC(sysfsh, hwInfo.deviceIndex, &tempC);
-						wrap_amdsysfs_get_fanpcnt(sysfsh, hwInfo.deviceIndex, &fanpcnt);
+						int typeidx = hwInfo.deviceIndex % m_opencl_count;
+						wrap_amdsysfs_get_tempC(sysfsh, typeidx, &tempC);
+						wrap_amdsysfs_get_fanpcnt(sysfsh, typeidx, &fanpcnt);
 						if(power) {
-							wrap_amdsysfs_get_power_usage(sysfsh, hwInfo.deviceIndex, &powerW);
+							wrap_amdsysfs_get_power_usage(sysfsh, typeidx, &powerW);
 						}
 					}
 #endif
@@ -411,6 +422,9 @@ private:
 	std::map<std::string, SealerDescriptor> m_sealers;
 	std::string m_lastSealer;
 	bool b_lastMixed = false;
+	//Save amount of cards per type
+	int m_cuda_count = 0;
+	int m_opencl_count = 0;
 
 	std::chrono::steady_clock::time_point m_lastStart;
 	int m_hashrateSmoothInterval = 10000;

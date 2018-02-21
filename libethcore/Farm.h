@@ -269,11 +269,21 @@ public:
 			if (hwmon) {
 				HwMonitorInfo hwInfo = i->hwmonInfo();
 				HwMonitor hw;
-				hw.powerW = 0.0;
 				unsigned int tempC = 0, fanpcnt = 0, powerW = 0;
 				if (hwInfo.deviceIndex >= 0) {
 					if (hwInfo.deviceType == HwMonitorInfoType::NVIDIA && nvmlh) {
-						int typeidx = hwInfo.deviceIndex % m_cuda_count;
+						int typeidx = 0;
+						if(hwInfo.indexSource == HwMonitorIndexSource::CUDA){
+							typeidx = nvmlh->cuda_nvml_device_id[(hwInfo.deviceIndex % m_cuda_count)];
+						}
+						else if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
+							//TODO: map with ocl
+							typeidx = hwInfo.deviceIndex % m_opencl_count;
+						}
+						else{
+							//Unknown, don't map
+							typeidx = hwInfo.deviceIndex % m_cuda_count;
+						}
 						wrap_nvml_get_tempC(nvmlh, typeidx, &tempC);
 						wrap_nvml_get_fanpcnt(nvmlh, typeidx, &fanpcnt);
 						if(power) {
@@ -281,7 +291,14 @@ public:
 						}
 					}
 					else if (hwInfo.deviceType == HwMonitorInfoType::AMD && adlh) {
-						int typeidx = hwInfo.deviceIndex % m_opencl_count;
+						int typeidx = 0;
+						if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
+							typeidx = adlh->opencl_adl_device_id[(hwInfo.deviceIndex % m_opencl_count)];
+						}
+						else{
+							//Unknown, don't map
+							typeidx = hwInfo.deviceIndex % m_opencl_count;
+						}
 						wrap_adl_get_tempC(adlh, typeidx, &tempC);
 						wrap_adl_get_fanpcnt(adlh, typeidx, &fanpcnt);
 						if(power) {
@@ -291,7 +308,16 @@ public:
 #if defined(__linux)
 					// Overwrite with sysfs data if present
 					if (hwInfo.deviceType == HwMonitorInfoType::AMD && sysfsh) {
-						int typeidx = hwInfo.deviceIndex % m_opencl_count;
+						int typeidx = 0;
+						if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
+							//TODO: map with ocl
+							//typeidx = sysfsh->opencl_sysfs_device_id[(hwInfo.deviceIndex % m_opencl_count)];
+							typeidx = hwInfo.deviceIndex % m_opencl_count;
+						}
+						else{
+							//Unknown, don't map
+							typeidx = hwInfo.deviceIndex % m_opencl_count;
+						}
 						wrap_amdsysfs_get_tempC(sysfsh, typeidx, &tempC);
 						wrap_amdsysfs_get_fanpcnt(sysfsh, typeidx, &fanpcnt);
 						if(power) {

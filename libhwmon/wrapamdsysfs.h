@@ -6,10 +6,29 @@
 
 #pragma once
 
+#if ETH_ETHASHCL
+// #define CL_USE_DEPRECATED_OPENCL_1_2_APIS true
+// #define CL_HPP_ENABLE_EXCEPTIONS true
+// #define CL_HPP_CL_1_2_DEFAULT_BUILD true
+// #define CL_HPP_TARGET_OPENCL_VERSION 120
+// #define CL_HPP_MINIMUM_OPENCL_VERSION 120
+// #include <libethash-cl/CL/cl2.hpp>
+
+// #ifndef CL_DEVICE_TOPOLOGY_AMD
+// #define CL_DEVICE_TOPOLOGY_AMD 						0x4037
+// #endif
+
+// #ifndef CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD
+// #define CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD 			1
+// #endif
+#endif
+
 typedef struct {
 	int sysfs_gpucount;
 	int *card_sysfs_device_id;  /* map cardidx to filesystem card idx */
 	int *sysfs_hwmon_id;        /* filesystem card idx to filesystem hwmon idx */
+	int *sysfs_opencl_device_id;          /* map ADL dev to OPENCL dev */
+	int *opencl_sysfs_device_id;          /* map OPENCL dev to ADL dev */
 } wrap_amdsysfs_handle;
 
 wrap_amdsysfs_handle * wrap_amdsysfs_create();

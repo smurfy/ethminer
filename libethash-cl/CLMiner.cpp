@@ -531,11 +531,13 @@ bool CLMiner::init(const h256& seed)
 			{
 				platformId = OPENCL_PLATFORM_NVIDIA;
 				m_hwmoninfo.deviceType = HwMonitorInfoType::NVIDIA;
+				m_hwmoninfo.indexSource = HwMonitorIndexSource::OPENCL;
 			}
 			else if (platformName == "AMD Accelerated Parallel Processing")
 			{
 				platformId = OPENCL_PLATFORM_AMD;
 				m_hwmoninfo.deviceType = HwMonitorInfoType::AMD;
+				m_hwmoninfo.indexSource = HwMonitorIndexSource::OPENCL;
 			}
 			else if (platformName == "Clover")
 			{

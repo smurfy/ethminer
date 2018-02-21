@@ -21,6 +21,14 @@
 #endif
 #include "wrapamdsysfs.h"
 
+#if ETH_ETHASHCL
+// typedef union
+// {
+//     struct { cl_uint type; cl_uint data[5]; } raw;
+//     struct { cl_uint type; cl_char unused[17]; cl_char bus; cl_char device; cl_char function; } pcie;
+// } cl_device_topology_amd;
+#endif
+
 static bool getFileContentValue(const char* filename, unsigned int& value)
 {
 	value = 0;
@@ -94,6 +102,25 @@ wrap_amdsysfs_handle * wrap_amdsysfs_create()
 	// Number of AMD cards found we do not care about non AMD cards
 	sysfsh->sysfs_gpucount = cardIndex;
 
+#if ETH_ETHASHCL
+	//Get and count OpenCL devices.
+	// int openclGpuCount = 0;
+	// std::vector<cl::Platform> platforms;
+	// cl::Platform::get(&platforms);
+	// std::vector<std::vector<cl::Device>> devicesPerPlatform;
+	// for(unsigned p = 0; p<platforms.size(); p++){
+	// 	std::vector<cl::Device> platdevs;
+	// 	platforms[p].getDevices(
+	// 		CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR,
+	// 		&platdevs
+	// 	);
+	// 	openclGpuCount += platdevs.size();
+	// 	devicesPerPlatform.push_back(platdevs);
+	// }
+	// adlh->opencl_adl_device_id = (int*) calloc(openclGpuCount, sizeof(int));		
+	///////
+#endif
+
 	// Get hwmon directory index
 	for (int i = 0; i < sysfsh->sysfs_gpucount; i++)
 	{
@@ -141,9 +168,65 @@ wrap_amdsysfs_handle * wrap_amdsysfs_create()
 		}
 
 		sysfsh->sysfs_hwmon_id[i] = hwmonIndex;
+
+#if ETH_ETHASHCL
+		//Get Bus, Device & Function for "i"
+		// char dbuf[120];
+		// snprintf(dbuf, 120, "/sys/class/drm/card%u/device/uevent", gpuindex);
+		// std::ifstream ifs(dbuf, std::ios::binary);
+		// std::string line;
+		// int iDomain = 0, iBus = 0, iDevice = 0, iFunction = 0;
+		// while (std::getline(ifs, line))
+		// {
+		// 	if (line.length() > 24 && line.substr(0, 13) == "PCI_SLOT_NAME") {
+		// 		std::string pciId = line.substr(14, 12);
+		// 		std::vector<string> pciParts ; 
+		// 		std::string part;  
+		// 		std::size_t prev = 0, pos;
+		// 		while ((pos = pciId.find_first_of(":.", prev)) != std::string::npos)
+		// 		{
+		// 			if (pos > prev)
+		// 				pciParts.push_back(pciId.substr(prev, pos-prev));
+		// 			prev = pos+1;
+		// 		}
+		// 		if (prev < pciId.length())
+		// 			pciParts.push_back(pciId.substr(prev, std::string::npos));
+		// 		//Format -- DDDD:BB:dd.FF 
+		// 		iDomain = atoi(pciParts[0].c_str());
+		// 		iBus = atoi(pciParts[1].c_str());
+		// 		iDevice = atoi(pciParts[2].c_str());
+		// 		iFunction = atoi(pciParts[3].c_str());
+		// 		break;
+		// 	}
+		// }
+		//Map sysfs  device id
+// 		for(unsigned p = 0; p<devicesPerPlatform.size(); p++){
+// 			for(unsigned j = 0; j<devicesPerPlatform[p].size(); j++){
+// 				cl::Device cldev = devicesPerPlatform[p][j];
+// 				cl_device_topology_amd topology;
+// 				int status = clGetDeviceInfo (cldev(), CL_DEVICE_TOPOLOGY_AMD,
+// 					sizeof(cl_device_topology_amd), &topology, NULL);
+// 				if(status == CL_SUCCESS) {
+// 					if (topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
+// 						if(iBus == (int)topology.pcie.bus
+// 						&& iDevice == (int)topology.pcie.device
+// 						&& iFunction == (int)topology.pcie.function){
+// #if 0
+// 							printf("[DEBUG] - ADL GPU[%d]%d,%d,%d matches OpenCL GPU[%d]%d,%d,%d\n", 
+// 							i, iBusNumber, iDeviceNumber, iFunctionNumber,
+// 							j, (int)topology.pcie.bus, (int)topology.pcie.device, (int)topology.pcie.function);
+// #endif	
+// 							sysfsh->sysfs_opencl_device_id[i] = j;
+// 							sysfsh->opencl_sysfs_device_id[j] = i;							
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+		///////
+#endif
 	}
 #endif
-
 	return sysfsh;
 }
 int wrap_amdsysfs_destroy(wrap_amdsysfs_handle *sysfsh)
@@ -173,12 +256,12 @@ int wrap_amdsysfs_get_gpu_pci_id(wrap_amdsysfs_handle *sysfsh, int index, char *
 	while (std::getline(ifs, line))
 	{
 		if (line.length() > 24 && line.substr(0, 13) == "PCI_SLOT_NAME") {
-			memcpy(idbuf, line.substr(14, 10).c_str(), bufsize);
+			memcpy(idbuf, line.substr(14, 12).c_str(), bufsize);
 			return 0;
 		}
 	}
 
-	memcpy(idbuf, "0000:00:00", bufsize);
+	//memcpy(idbuf, "0000:00:00.0", bufsize);//?
 	return -1;
 }
 

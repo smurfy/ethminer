@@ -29,6 +29,14 @@
 extern "C" {
 #endif
 
+#if ETH_ETHASHCL
+typedef union
+{
+    struct { cl_uint type; cl_uint data[5]; } raw;
+    struct { cl_uint type; cl_char unused[17]; cl_char bus; cl_char device; cl_char function; } pcie;
+} cl_device_topology_amd;
+#endif
+
 wrap_nvml_handle * wrap_nvml_create() {
   wrap_nvml_handle *nvmlh = NULL;
 
@@ -171,6 +179,54 @@ return NULL;
     }
   }
 
+#endif
+
+#if ETH_ETHASHCL
+  //Get and count OpenCL devices.
+  int openclGpuCount = 0;
+  std::vector<cl::Platform> platforms;
+  cl::Platform::get(&platforms);
+  std::vector<std::vector<cl::Device>> devicesPerPlatform;
+  for(unsigned p = 0; p<platforms.size(); p++){
+    std::vector<cl::Device> platdevs;
+    platforms[p].getDevices(
+      CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR,
+      &platdevs
+    );
+    openclGpuCount += platdevs.size();
+    devicesPerPlatform.push_back(platdevs);
+  }
+  nvmlh->opencl_nvml_device_id = (int*) calloc(openclGpuCount, sizeof(int));		
+  ///////
+
+  //Map ADL phys device id
+  for(int i = 0; i<nvmlh->nvml_gpucount; i++){
+    for(unsigned p = 0; p<devicesPerPlatform.size(); p++){
+      for(unsigned j = 0; j<devicesPerPlatform[p].size(); j++){
+        cl::Device cldev = devicesPerPlatform[p][j];
+        cl_device_topology_amd topology;
+        int status = clGetDeviceInfo (cldev(), CL_DEVICE_TOPOLOGY_AMD,
+          sizeof(cl_device_topology_amd), &topology, NULL);
+        if(status == CL_SUCCESS) {
+          if (topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
+            if(nvmlh->nvml_pci_bus_id[i] == (int)topology.pcie.bus
+            && nvmlh->nvml_pci_device_id[i] == (int)topology.pcie.device
+            /*&& nvmlh->nvml_pci_domain_id[i] == (int)topology.pcie.function*/){
+#if 0
+              printf("[DEBUG] - ADL GPU[%d]%d,%d,%d matches OpenCL GPU[%d]%d,%d,%d\n", 
+              i, nvmlh->nvml_pci_bus_id[i], nvml_pci_device_id[i], nvmlh->nvml_pci_domain_id[i],
+              j, (int)topology.pcie.bus, (int)topology.pcie.device, (int)topology.pcie.function);
+#endif	
+              nvmlh->nvml_opencl_device_id[i] = j;
+              nvmlh->opencl_nvml_device_id[j] = i;							
+            }
+          }
+        }
+
+      }
+    }
+  }
+  ///////
 #endif
 
   return nvmlh;

@@ -143,6 +143,7 @@ typedef struct ADLFanSpeedValue
 typedef struct {
 	void *adl_dll;
 	int adl_gpucount;
+	int log_gpucount;
 	int opencl_gpucount;
 	int *phys_logi_device_id;
 	LPAdapterInfo devs;

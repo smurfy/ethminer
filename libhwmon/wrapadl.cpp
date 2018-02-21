@@ -113,35 +113,17 @@ return NULL;
 	int logicalGpuCount = 0;
 	adlh->adlAdapterNumberOfAdapters(&logicalGpuCount);
 
-	adlh->adl_opencl_device_id = (int*) calloc(logicalGpuCount, sizeof(int));
 	adlh->phys_logi_device_id = (int*)calloc(logicalGpuCount, sizeof(int));
-
 	
 	adlh->adl_gpucount = 0;
 	int last_adapter = 0;
 	if (logicalGpuCount > 0) {
+		adlh->log_gpucount = logicalGpuCount;
 		adlh->devs = (LPAdapterInfo)malloc(sizeof(AdapterInfo) * logicalGpuCount);
 		memset(adlh->devs, '\0', sizeof(AdapterInfo) * logicalGpuCount);
 
 		adlh->devs->iSize = sizeof(adlh->devs);
-#if ETH_ETHASHCL
-		//Get and count OpenCL devices.
-		int openclGpuCount = 0;
-		std::vector<cl::Platform> platforms;
-		cl::Platform::get(&platforms);
-		std::vector<std::vector<cl::Device>> devicesPerPlatform;
-		for(int i = 0; i<platforms.size(); i++){
-			std::vector<cl::Device> platdevs;
-			platforms[i].getDevices(
-				CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR,
-				&platdevs
-			);
-			openclGpuCount += platdevs.size();
-			devicesPerPlatform.push_back(platdevs);
-		}
-		adlh->opencl_adl_device_id = (int*) calloc(openclGpuCount, sizeof(int));		
-		//////
-#endif
+
 		int res = adlh->adlAdapterAdapterInfoGet(adlh->devs, sizeof(AdapterInfo) * logicalGpuCount);
 
 		for (int i = 0; i < logicalGpuCount; i++) {
@@ -159,37 +141,67 @@ return NULL;
 			if (adapterID == last_adapter) {
 				continue;
 			}
+
+			last_adapter = adapterID;
+			adlh->adl_gpucount++;
+		}
+	}
+
+
+	adlh->adl_opencl_device_id = (int*) calloc(adlh->adl_gpucount, sizeof(int));
 #if ETH_ETHASHCL
-			//Map ADL device id
-			for(int p = 0; p<devicesPerPlatform.size(); p++){
-				for(int j = 0; j<devicesPerPlatform[p].size(); j++){
+	if(adlh->adl_gpucount > 0){
+
+		//Get and count OpenCL devices.
+		int openclGpuCount = 0;
+		std::vector<cl::Platform> platforms;
+		cl::Platform::get(&platforms);
+		std::vector<std::vector<cl::Device>> devicesPerPlatform;
+		for(unsigned p = 0; p<platforms.size(); p++){
+			std::vector<cl::Device> platdevs;
+			platforms[p].getDevices(
+				CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR,
+				&platdevs
+			);
+			openclGpuCount += platdevs.size();
+			devicesPerPlatform.push_back(platdevs);
+		}
+		adlh->opencl_adl_device_id = (int*) calloc(openclGpuCount, sizeof(int));		
+		///////
+
+		//Map ADL phys device id
+		for(int i = 0; i<adlh->adl_gpucount; i++){
+			for(unsigned p = 0; p<devicesPerPlatform.size(); p++){
+				for(unsigned j = 0; j<devicesPerPlatform[p].size(); j++){
 					cl::Device cldev = devicesPerPlatform[p][j];
 					cl_device_topology_amd topology;
 					int status = clGetDeviceInfo (cldev(), CL_DEVICE_TOPOLOGY_AMD,
 						sizeof(cl_device_topology_amd), &topology, NULL);
 					if(status == CL_SUCCESS) {
 						if (topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
-							if(adlh->devs[i].iBusNumber == (int)topology.pcie.bus
-							&& adlh->devs[i].iDeviceNumber == (int)topology.pcie.device
-							&& adlh->devs[i].iFunctionNumber == (int)topology.pcie.function){
+							if(adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber == (int)topology.pcie.bus
+							&& adlh->devs[adlh->phys_logi_device_id[i]].iDeviceNumber == (int)topology.pcie.device
+							&& adlh->devs[adlh->phys_logi_device_id[i]].iFunctionNumber == (int)topology.pcie.function){
 #if 0
-          						printf("[DEBUG] - ADL GPU[%d]%d,%d,%d matches OpenCL GPU[%d]%d,%d,%d\n", 
-								  adapterIndex, adlh->devs[i].iBusNumber, adlh->devs[i].iDeviceNumber, adlh->devs[i].iFunctionNumber,
-								  j, (int)topology.pcie.bus, (int)topology.pcie.device, (int)topology.pcie.function);
+								printf("[DEBUG] - ADL GPU[%d]%d,%d,%d matches OpenCL GPU[%d]%d,%d,%d\n", 
+								adapterIndex, 
+								adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber, 
+								adlh->devs[adlh->phys_logi_device_id[i]].iDeviceNumber, 
+								adlh->devs[adlh->phys_logi_device_id[i]].iFunctionNumber,
+								j, (int)topology.pcie.bus, (int)topology.pcie.device, (int)topology.pcie.function);
 #endif	
-								adlh->adl_opencl_device_id[adapterIndex] = j;
-								adlh->opencl_adl_device_id[j] = adapterIndex;							
+								adlh->adl_opencl_device_id[i] = j;
+								adlh->opencl_adl_device_id[j] = i;							
 							}
 						}
 					}
 
 				}
 			}
-#endif
-			last_adapter = adapterID;
-			adlh->adl_gpucount++;
 		}
+		///////
 	}
+#endif
 
 	return adlh;
 }
@@ -211,20 +223,19 @@ int wrap_adl_get_gpucount(wrap_adl_handle *adlh, int *gpucount)
 
 int wrap_adl_get_gpu_name(wrap_adl_handle *adlh, int gpuindex, char *namebuf, int bufsize)
 {
-	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
+	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount){
 		return -1;
-
+	}
 	memcpy(namebuf, adlh->devs[adlh->phys_logi_device_id[gpuindex]].strAdapterName, bufsize);
 	return 0;
 }
 
 int wrap_adl_get_gpu_pci_id(wrap_adl_handle *adlh, int gpuindex, char *idbuf, int bufsize)
 {
-	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
+	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount){
 		return -1;
-
+	}
 	char buf[256];
-
 	sprintf(
 		buf,
 		"%04x:%02x:%02x",
@@ -232,21 +243,18 @@ int wrap_adl_get_gpu_pci_id(wrap_adl_handle *adlh, int gpuindex, char *idbuf, in
 		adlh->devs[adlh->phys_logi_device_id[gpuindex]].iBusNumber,
 		adlh->devs[adlh->phys_logi_device_id[gpuindex]].iDeviceNumber
 	);
-
 	memcpy(idbuf, buf, bufsize);
-
 	return 0;
 }
 
 int wrap_adl_get_tempC(wrap_adl_handle *adlh, int gpuindex, unsigned int *tempC)
 {
 	wrap_adlReturn_t rc;
-	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
+	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount){
 		return -1;
-
+	}
 	ADLTemperature *temperature = new ADLTemperature();
-	int adlidx = adlh->opencl_adl_device_id[gpuindex];
-	rc = adlh->adlOverdrive5TemperatureGet(adlidx, 0, temperature);
+	rc = adlh->adlOverdrive5TemperatureGet(adlh->phys_logi_device_id[gpuindex], 0, temperature);
 	if (rc != WRAPADL_OK) {
 		return -1;
 	}
@@ -258,13 +266,12 @@ int wrap_adl_get_tempC(wrap_adl_handle *adlh, int gpuindex, unsigned int *tempC)
 int wrap_adl_get_fanpcnt(wrap_adl_handle *adlh, int gpuindex, unsigned int *fanpcnt)
 {
 	wrap_adlReturn_t rc;
-	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
+	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount){
 		return -1;
-
+	}
 	ADLFanSpeedValue *fan = new ADLFanSpeedValue();
 	fan->iSpeedType = 1;
-	int adlidx = adlh->opencl_adl_device_id[gpuindex];
-	rc = adlh->adlOverdrive5FanSpeedGet(adlidx, 0, fan);
+	rc = adlh->adlOverdrive5FanSpeedGet(adlh->phys_logi_device_id[gpuindex], 0, fan);
 	if (rc != WRAPADL_OK) {
 		return -1;
 	}
@@ -276,12 +283,11 @@ int wrap_adl_get_fanpcnt(wrap_adl_handle *adlh, int gpuindex, unsigned int *fanp
 int wrap_adl_get_power_usage(wrap_adl_handle *adlh, int gpuindex, unsigned int* miliwatts)
 {
 	wrap_adlReturn_t rc;
-	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount){
+	if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount) {
 		return -1;
 	}
 	int power = 0;
-	int adlidx = adlh->opencl_adl_device_id[gpuindex];
-	rc = adlh->adl2Overdrive6CurrentPowerGet(adlh->context, adlidx, 0, &power);
+	rc = adlh->adl2Overdrive6CurrentPowerGet(adlh->context, adlh->phys_logi_device_id[gpuindex], 0, &power);
 	*miliwatts = power * 3.90625;
 	return rc;
 }

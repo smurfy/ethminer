@@ -7,10 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "wrapadl.h"
-#if ETH_ETHASHCL
-#include <libethash-cl/CLMiner_kernel_stable.h>
-#include <libethash-cl/CLMiner_kernel_experimental.h>
-#endif
 
 #if defined(__cplusplus)
 extern "C" {

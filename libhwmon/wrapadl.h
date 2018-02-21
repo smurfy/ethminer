@@ -4,15 +4,38 @@
 * By Philipp Andreas - github@smurfy.de
 * ADL power by Davesmacer
 */
+#pragma once
 
 #include "wraphelper.h"
 
-#pragma once
+#if ETH_ETHASHCL
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS true
+#define CL_HPP_ENABLE_EXCEPTIONS true
+#define CL_HPP_CL_1_2_DEFAULT_BUILD true
+#define CL_HPP_TARGET_OPENCL_VERSION 120
+#define CL_HPP_MINIMUM_OPENCL_VERSION 120
+#include <libethash-cl/CL/cl2.hpp>
+#endif
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
+#if ETH_ETHASHCL
+#ifndef CL_DEVICE_TOPOLOGY_AMD
+#define CL_DEVICE_TOPOLOGY_AMD 						0x4037
+#endif
+
+#ifndef CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD
+#define CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD 			1
+#endif
+
+typedef union
+{
+    struct { cl_uint type; cl_uint data[5]; } raw;
+    struct { cl_uint type; cl_char unused[17]; cl_char bus; cl_char device; cl_char function; } pcie;
+} cl_device_topology_amd;
+#endif
 
 typedef enum wrap_adlReturn_enum {
 	WRAPADL_OK= 0
@@ -120,9 +143,12 @@ typedef struct ADLFanSpeedValue
 typedef struct {
 	void *adl_dll;
 	int adl_gpucount;
+	int opencl_gpucount;
 	int *phys_logi_device_id;
 	LPAdapterInfo devs;
 	ADL_CONTEXT_HANDLE context;
+	int *adl_opencl_device_id;          /* map ADL dev to OPENCL dev */
+	int *opencl_adl_device_id;          /* map OPENCL dev to ADL dev */
 	wrap_adlReturn_t(*adlMainControlCreate)(ADL_MAIN_MALLOC_CALLBACK, int);
 	wrap_adlReturn_t(*adlAdapterNumberOfAdapters)(int *);
 	wrap_adlReturn_t(*adlAdapterAdapterInfoGet)(LPAdapterInfo, int);

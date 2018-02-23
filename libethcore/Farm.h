@@ -278,7 +278,7 @@ public:
 						}
 						else if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
 							//TODO: map with ocl
-							typeidx = hwInfo.deviceIndex % m_opencl_count;
+							typeidx = nvmlh->opencl_nvml_device_id[(hwInfo.deviceIndex % m_cuda_count)];
 						}
 						else{
 							//Unknown, don't map
@@ -312,7 +312,7 @@ public:
 						if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
 							//TODO: map with ocl
 							//typeidx = sysfsh->opencl_sysfs_device_id[(hwInfo.deviceIndex % m_opencl_count)];
-							typeidx = hwInfo.deviceIndex % m_opencl_count;
+							typeidx = (hwInfo.deviceIndex % m_opencl_count);
 						}
 						else{
 							//Unknown, don't map

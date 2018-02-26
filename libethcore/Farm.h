@@ -277,8 +277,8 @@ public:
 							typeidx = nvmlh->cuda_nvml_device_id[(hwInfo.deviceIndex % m_cuda_count)];
 						}
 						else if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
-							//TODO: map with ocl
 							typeidx = nvmlh->opencl_nvml_device_id[(hwInfo.deviceIndex % m_cuda_count)];
+							printf("[DEBUG] - OCL %d to NVML %d", (hwInfo.deviceIndex % m_cuda_count), typeidx);
 						}
 						else{
 							//Unknown, don't map

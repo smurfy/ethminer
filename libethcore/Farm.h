@@ -277,8 +277,7 @@ public:
 							typeidx = nvmlh->cuda_nvml_device_id[(hwInfo.deviceIndex % m_cuda_count)];
 						}
 						else if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
-							typeidx = nvmlh->opencl_nvml_device_id[(hwInfo.deviceIndex % m_cuda_count)];
-							printf("[DEBUG] - OCL %d to NVML %d", (hwInfo.deviceIndex % m_cuda_count), typeidx);
+							typeidx = nvmlh->opencl_nvml_device_id[(hwInfo.deviceIndex % m_opencl_count)];
 						}
 						else{
 							//Unknown, don't map
@@ -310,9 +309,7 @@ public:
 					if (hwInfo.deviceType == HwMonitorInfoType::AMD && sysfsh) {
 						int typeidx = 0;
 						if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
-							//TODO: map with ocl
-							//typeidx = sysfsh->opencl_sysfs_device_id[(hwInfo.deviceIndex % m_opencl_count)];
-							typeidx = (hwInfo.deviceIndex % m_opencl_count);
+							typeidx = sysfsh->opencl_sysfs_device_id[(hwInfo.deviceIndex % m_opencl_count)];
 						}
 						else{
 							//Unknown, don't map

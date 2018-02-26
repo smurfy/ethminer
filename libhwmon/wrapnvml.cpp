@@ -173,51 +173,49 @@ return NULL;
 
 #endif
 
+	nvmlh->opencl_gpucount = 0;
+	nvmlh->nvml_opencl_device_id = (int*)calloc(nvmlh->nvml_gpucount, sizeof(int));
 #if ETH_ETHASHCL
-  //Get and count OpenCL devices.
-  int openclGpuCount = 0;
-  std::vector<cl::Platform> platforms;
-  cl::Platform::get(&platforms);
-  std::vector<std::vector<cl::Device>> devicesPerPlatform;
-  for(unsigned p = 0; p<platforms.size(); p++){
-    std::vector<cl::Device> platdevs;
-    platforms[p].getDevices(
-      CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR,
-      &platdevs
-    );
-    openclGpuCount += platdevs.size();
-    devicesPerPlatform.push_back(platdevs);
-  }
-  nvmlh->opencl_nvml_device_id = (int*) calloc(openclGpuCount, sizeof(int));
-  nvmlh->nvml_opencl_device_id = (int*) calloc(nvmlh->nvml_gpucount, sizeof(int));				
-  ///////
+	//Get and count OpenCL devices.
+	std::vector<cl::Platform> platforms;
+	cl::Platform::get(&platforms);
+	std::vector<cl::Device> platdevs;
+	for(unsigned p = 0; p<platforms.size(); p++){
+		std::string platformName = platforms[p].getInfo<CL_PLATFORM_NAME>();
+		if (platformName == "NVIDIA CUDA") {
+			platforms[p].getDevices(
+				CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR,
+				&platdevs
+			);
+			nvmlh->opencl_gpucount = platdevs.size();
+			break;
+		}
+	}
 
-  //Map ADL phys device id
-  for(int i = 0; i<nvmlh->nvml_gpucount; i++){
-    for(unsigned p = 0; p<devicesPerPlatform.size(); p++){
-      for(unsigned j = 0; j<devicesPerPlatform[p].size(); j++){
-        cl::Device cldev = devicesPerPlatform[p][j];
-        cl_int busId, slotId;
-        int statusB = clGetDeviceInfo (cldev(),  CL_DEVICE_PCI_BUS_ID_NV,
-          sizeof(cl_int), &busId, NULL);
-        int statusS = clGetDeviceInfo (cldev(),  CL_DEVICE_PCI_SLOT_ID_NV,
-          sizeof(cl_int), &slotId, NULL);
-        if(statusB == CL_SUCCESS && statusS == CL_SUCCESS) {
-          if(busId == nvmlh->nvml_pci_bus_id[i]
-          && slotId == nvmlh->nvml_pci_device_id[i]) {
-#if 1
-            printf("[DEBUG] - NVML GPU[%d]%d,%d matches OpenCL GPU[%d]%d,%d\n", 
-            i, nvmlh->nvml_pci_bus_id[i], nvmlh->nvml_pci_device_id[i], 
-            j, busId, slotId);
+	nvmlh->opencl_nvml_device_id = (int*)calloc(nvmlh->opencl_gpucount, sizeof(int));
+
+	//Map NVML to opencl devices
+	for(int i = 0; i<nvmlh->nvml_gpucount; i++){
+		for(unsigned j = 0; j<platdevs.size(); j++){
+		cl::Device cldev = platdevs[j];
+		cl_int busId, slotId;
+		int statusB = clGetDeviceInfo (cldev(),  CL_DEVICE_PCI_BUS_ID_NV,
+			sizeof(cl_int), &busId, NULL);
+		int statusS = clGetDeviceInfo (cldev(),  CL_DEVICE_PCI_SLOT_ID_NV,
+			sizeof(cl_int), &slotId, NULL);
+		if(statusB == CL_SUCCESS && statusS == CL_SUCCESS) {
+			if((unsigned)busId == nvmlh->nvml_pci_bus_id[i] && (unsigned)slotId == nvmlh->nvml_pci_device_id[i]) {
+#if 0
+				printf("[DEBUG] - NVML GPU[%d]%d,%d matches OpenCL GPU[%d]%d,%d\n", 
+				i, nvmlh->nvml_pci_bus_id[i], nvmlh->nvml_pci_device_id[i], 
+				j, busId, slotId);
 #endif
-            nvmlh->nvml_opencl_device_id[i] = j;
-            nvmlh->opencl_nvml_device_id[j] = i;							
-          }
-        }
-      }
-    }
-  }
-  ///////
+				nvmlh->nvml_opencl_device_id[i] = j;
+				nvmlh->opencl_nvml_device_id[j] = i;							
+				}
+			}
+		}
+	}
 #endif
 
   return nvmlh;
@@ -231,7 +229,6 @@ int wrap_nvml_destroy(wrap_nvml_handle *nvmlh) {
   free(nvmlh);
   return 0;
 }
-
 
 int wrap_nvml_get_gpucount(wrap_nvml_handle *nvmlh, int *gpucount) {
   *gpucount = nvmlh->nvml_gpucount;

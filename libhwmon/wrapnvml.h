@@ -16,35 +16,8 @@
 
 #pragma once
 
-#if ETH_ETHASHCL
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS true
-#define CL_HPP_ENABLE_EXCEPTIONS true
-#define CL_HPP_CL_1_2_DEFAULT_BUILD true
-#define CL_HPP_TARGET_OPENCL_VERSION 120
-#define CL_HPP_MINIMUM_OPENCL_VERSION 120
-#include <libethash-cl/CL/cl2.hpp>
-#endif
-
 #if defined(__cplusplus)
 extern "C" {
-#endif
-
-#if ETH_ETHASHCL
-#ifndef CL_DEVICE_TOPOLOGY_AMD
-#define CL_DEVICE_TOPOLOGY_AMD 						0x4037
-#endif
-
-#ifndef CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD
-#define CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD 			1
-#endif
-
-#ifndef CL_DEVICE_PCI_BUS_ID_NV
-#define CL_DEVICE_PCI_BUS_ID_NV  0x4008
-#endif
-
-#ifndef CL_DEVICE_PCI_SLOT_ID_NV
-#define CL_DEVICE_PCI_SLOT_ID_NV 0x4009
-#endif
 #endif
 
 /* 
@@ -81,13 +54,14 @@ typedef struct {
   void *nvml_dll;
   int nvml_gpucount;
   int cuda_gpucount;
+  int opencl_gpucount;
   unsigned int *nvml_pci_domain_id;
   unsigned int *nvml_pci_bus_id;
   unsigned int *nvml_pci_device_id;
   int *nvml_cuda_device_id;          /* map NVML dev to CUDA dev */
   int *cuda_nvml_device_id;          /* map CUDA dev to NVML dev */
-  int *nvml_opencl_device_id;          /* map NVML dev to CUDA dev */
-  int *opencl_nvml_device_id;          /* map CUDA dev to NVML dev */
+  int *nvml_opencl_device_id;          /* map NVML dev to OPENCL dev */
+  int *opencl_nvml_device_id;          /* map OPENCL dev to NVML dev */
   wrap_nvmlDevice_t *devs;
   wrap_nvmlReturn_t (*nvmlInit)(void);
   wrap_nvmlReturn_t (*nvmlDeviceGetCount)(int *);

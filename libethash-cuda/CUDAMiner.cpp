@@ -329,7 +329,7 @@ bool CUDAMiner::cuda_init(
 		m_device_num = _deviceId < numDevices -1 ? _deviceId : numDevices - 1;
 		m_hwmoninfo.deviceType = HwMonitorInfoType::NVIDIA;
 		m_hwmoninfo.indexSource = HwMonitorIndexSource::CUDA;
-		m_hwmoninfo.deviceIndex = m_device_num;
+		m_hwmoninfo.deviceIndex = index;
 
 		cudaDeviceProp device_props;
 		CUDA_SAFE_CALL(cudaGetDeviceProperties(&device_props, m_device_num));

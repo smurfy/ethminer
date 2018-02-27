@@ -145,13 +145,6 @@ public:
 			// Start miners' threads. They should pause waiting for new work
 			// package.
 			m_miners.back()->startWorking();
-			// Count devices type
-			if(_sealer == "cuda"){
-				m_cuda_count++;
-			}
-			else if(_sealer == "opencl"){
-				m_opencl_count++;
-			}
 		}
 		m_isMining = true;
 		m_lastSealer = _sealer;
@@ -189,8 +182,6 @@ public:
 			p_hashrateTimer->cancel();
 			p_hashrateTimer = nullptr;
 		}
-		m_cuda_count = 0;
-		m_opencl_count = 0;
 	}
 
     void collectHashRate()
@@ -274,14 +265,14 @@ public:
 					if (hwInfo.deviceType == HwMonitorInfoType::NVIDIA && nvmlh) {
 						int typeidx = 0;
 						if(hwInfo.indexSource == HwMonitorIndexSource::CUDA){
-							typeidx = nvmlh->cuda_nvml_device_id[(hwInfo.deviceIndex % m_cuda_count)];
+							typeidx = nvmlh->cuda_nvml_device_id[hwInfo.deviceIndex];
 						}
 						else if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
-							typeidx = nvmlh->opencl_nvml_device_id[(hwInfo.deviceIndex % m_opencl_count)];
+							typeidx = nvmlh->opencl_nvml_device_id[hwInfo.deviceIndex];
 						}
 						else{
 							//Unknown, don't map
-							typeidx = hwInfo.deviceIndex % m_cuda_count;
+							typeidx = hwInfo.deviceIndex;
 						}
 						wrap_nvml_get_tempC(nvmlh, typeidx, &tempC);
 						wrap_nvml_get_fanpcnt(nvmlh, typeidx, &fanpcnt);
@@ -292,11 +283,11 @@ public:
 					else if (hwInfo.deviceType == HwMonitorInfoType::AMD && adlh) {
 						int typeidx = 0;
 						if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
-							typeidx = adlh->opencl_adl_device_id[(hwInfo.deviceIndex % m_opencl_count)];
+							typeidx = adlh->opencl_adl_device_id[hwInfo.deviceIndex];
 						}
 						else{
 							//Unknown, don't map
-							typeidx = hwInfo.deviceIndex % m_opencl_count;
+							typeidx = hwInfo.deviceIndex;
 						}
 						wrap_adl_get_tempC(adlh, typeidx, &tempC);
 						wrap_adl_get_fanpcnt(adlh, typeidx, &fanpcnt);
@@ -309,11 +300,11 @@ public:
 					if (hwInfo.deviceType == HwMonitorInfoType::AMD && sysfsh) {
 						int typeidx = 0;
 						if(hwInfo.indexSource == HwMonitorIndexSource::OPENCL){
-							typeidx = sysfsh->opencl_sysfs_device_id[(hwInfo.deviceIndex % m_opencl_count)];
+							typeidx = sysfsh->opencl_sysfs_device_id[hwInfo.deviceIndex];
 						}
 						else{
 							//Unknown, don't map
-							typeidx = hwInfo.deviceIndex % m_opencl_count;
+							typeidx = hwInfo.deviceIndex;
 						}
 						wrap_amdsysfs_get_tempC(sysfsh, typeidx, &tempC);
 						wrap_amdsysfs_get_fanpcnt(sysfsh, typeidx, &fanpcnt);
@@ -447,9 +438,6 @@ private:
 	std::map<std::string, SealerDescriptor> m_sealers;
 	std::string m_lastSealer;
 	bool b_lastMixed = false;
-	//Save amount of cards per type
-	int m_cuda_count = 0;
-	int m_opencl_count = 0;
 
 	std::chrono::steady_clock::time_point m_lastStart;
 	int m_hashrateSmoothInterval = 10000;
